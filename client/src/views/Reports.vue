@@ -1,35 +1,35 @@
 <template>
   <div class="reports">
     <div class="page-header">
-      <h2>Performance Reports</h2>
-      <p>View quarterly performance metrics and monthly trends</p>
+      <h2>{{ t('reports.title') }}</h2>
+      <p>{{ t('reports.description') }}</p>
     </div>
 
-    <div v-if="loading" class="loading">Loading reports...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
+    <div v-else-if="error" class="error">{{ t('common.error') }}: {{ error }}</div>
     <div v-else>
       <!-- Quarterly Performance -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Quarterly Performance</h3>
+          <h3 class="card-title">{{ t('reports.quarterly.title') }}</h3>
         </div>
         <div class="table-container">
           <table class="reports-table">
             <thead>
               <tr>
-                <th>Quarter</th>
-                <th>Total Orders</th>
-                <th>Total Revenue</th>
-                <th>Avg Order Value</th>
-                <th>Fulfillment Rate</th>
+                <th>{{ t('reports.quarterly.quarter') }}</th>
+                <th>{{ t('reports.quarterly.totalOrders') }}</th>
+                <th>{{ t('reports.quarterly.totalRevenue') }}</th>
+                <th>{{ t('reports.quarterly.avgOrderValue') }}</th>
+                <th>{{ t('reports.quarterly.fulfillmentRate') }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(q, index) in quarterlyData" :key="index">
+              <tr v-for="q in quarterlyData" :key="q.quarter">
                 <td><strong>{{ q.quarter }}</strong></td>
                 <td>{{ q.total_orders }}</td>
-                <td>${{ formatNumber(q.total_revenue) }}</td>
-                <td>${{ formatNumber(q.avg_order_value) }}</td>
+                <td>{{ currencySymbol }}{{ formatNumber(q.total_revenue) }}</td>
+                <td>{{ currencySymbol }}{{ formatNumber(q.avg_order_value) }}</td>
                 <td>
                   <span :class="getFulfillmentClass(q.fulfillment_rate)">
                     {{ q.fulfillment_rate }}%
@@ -44,16 +44,16 @@
       <!-- Monthly Trends Chart -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Monthly Revenue Trend</h3>
+          <h3 class="card-title">{{ t('reports.monthly.title') }}</h3>
         </div>
         <div class="chart-container">
           <div class="bar-chart">
-            <div v-for="(month, index) in monthlyData" :key="index" class="bar-wrapper">
+            <div v-for="month in monthlyData" :key="month.month" class="bar-wrapper">
               <div class="bar-container">
                 <div
                   class="bar"
                   :style="{ height: getBarHeight(month.revenue) + 'px' }"
-                  :title="'$' + formatNumber(month.revenue)"
+                  :title="currencySymbol + formatNumber(month.revenue)"
                 ></div>
               </div>
               <div class="bar-label">{{ formatMonth(month.month) }}</div>
@@ -65,24 +65,24 @@
       <!-- Month-over-Month Comparison -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Month-over-Month Analysis</h3>
+          <h3 class="card-title">{{ t('reports.monthly.analysis') }}</h3>
         </div>
         <div class="table-container">
           <table class="reports-table">
             <thead>
               <tr>
-                <th>Month</th>
-                <th>Orders</th>
-                <th>Revenue</th>
-                <th>Change</th>
-                <th>Growth Rate</th>
+                <th>{{ t('reports.monthly.month') }}</th>
+                <th>{{ t('reports.monthly.orders') }}</th>
+                <th>{{ t('reports.monthly.revenue') }}</th>
+                <th>{{ t('reports.monthly.change') }}</th>
+                <th>{{ t('reports.monthly.growthRate') }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(month, index) in monthlyData" :key="index">
+              <tr v-for="(month, index) in monthlyData" :key="'mom-' + month.month">
                 <td><strong>{{ formatMonth(month.month) }}</strong></td>
                 <td>{{ month.order_count }}</td>
-                <td>${{ formatNumber(month.revenue) }}</td>
+                <td>{{ currencySymbol }}{{ formatNumber(month.revenue) }}</td>
                 <td>
                   <span v-if="index > 0" :class="getChangeClass(month.revenue, monthlyData[index - 1].revenue)">
                     {{ getChangeValue(month.revenue, monthlyData[index - 1].revenue) }}
@@ -104,19 +104,19 @@
       <!-- Summary Stats -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Total Revenue (YTD)</div>
-          <div class="stat-value">${{ formatNumber(totalRevenue) }}</div>
+          <div class="stat-label">{{ t('reports.summary.totalRevenueYTD') }}</div>
+          <div class="stat-value">{{ currencySymbol }}{{ formatNumber(totalRevenue) }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Avg Monthly Revenue</div>
-          <div class="stat-value">${{ formatNumber(avgMonthlyRevenue) }}</div>
+          <div class="stat-label">{{ t('reports.summary.avgMonthlyRevenue') }}</div>
+          <div class="stat-value">{{ currencySymbol }}{{ formatNumber(avgMonthlyRevenue) }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total Orders (YTD)</div>
+          <div class="stat-label">{{ t('reports.summary.totalOrdersYTD') }}</div>
           <div class="stat-value">{{ totalOrders }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Best Performing Quarter</div>
+          <div class="stat-label">{{ t('reports.summary.bestQuarter') }}</div>
           <div class="stat-value">{{ bestQuarter }}</div>
         </div>
       </div>
@@ -125,18 +125,26 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
-
-const API_BASE_URL = 'http://localhost:8001/api'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from '../composables/useI18n'
+import { useFilters } from '../composables/useFilters'
+import { api } from '../api'
 
 export default {
   name: 'Reports',
   setup() {
+    const { t, currentLocale } = useI18n()
+    const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
+
     const loading = ref(true)
     const error = ref(null)
     const quarterlyData = ref([])
     const monthlyData = ref([])
+
+    // Currency symbol derived from locale
+    const currencySymbol = computed(() =>
+      currentLocale.value === 'ja' ? '¥' : '$'
+    )
 
     // Derived summary stats as computed properties
     const totalRevenue = computed(() =>
@@ -167,12 +175,13 @@ export default {
       loading.value = true
       error.value = null
       try {
+        const filters = getCurrentFilters()
         const [quarterlyResponse, monthlyResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}/reports/quarterly`),
-          axios.get(`${API_BASE_URL}/reports/monthly-trends`)
+          api.getQuarterlyReports(filters),
+          api.getMonthlyTrends(filters)
         ])
-        quarterlyData.value = quarterlyResponse.data
-        monthlyData.value = monthlyResponse.data
+        quarterlyData.value = quarterlyResponse
+        monthlyData.value = monthlyResponse
       } catch (err) {
         error.value = 'Failed to load reports: ' + err.message
       } finally {
@@ -180,14 +189,30 @@ export default {
       }
     }
 
+    // Reload on filter changes
+    watch([selectedPeriod, selectedLocation, selectedCategory], () => {
+      loadData()
+    })
+
     // Formatting helpers
-    const formatNumber = (num) =>
-      Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const formatNumber = (num) => {
+      const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
+      return Number(num).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }
+
+    const monthKeyMap = [
+      'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+      'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+    ]
 
     const formatMonth = (monthStr) => {
-      const [year, month] = monthStr.split('-')
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      return `${monthNames[parseInt(month, 10) - 1]} ${year}`
+      const parts = monthStr.split('-')
+      if (parts.length < 2) return monthStr
+      const year = parts[0]
+      const monthIndex = parseInt(parts[1], 10) - 1
+      if (monthIndex < 0 || monthIndex > 11) return monthStr
+      const monthName = t(`months.${monthKeyMap[monthIndex]}`)
+      return `${monthName} ${year}`
     }
 
     const getBarHeight = (revenue) => {
@@ -203,9 +228,10 @@ export default {
 
     const getChangeValue = (current, previous) => {
       const change = current - previous
-      if (change > 0) return `+$${formatNumber(change)}`
-      if (change < 0) return `-$${formatNumber(Math.abs(change))}`
-      return '$0.00'
+      const sym = currencySymbol.value
+      if (change > 0) return `+${sym}${formatNumber(change)}`
+      if (change < 0) return `-${sym}${formatNumber(Math.abs(change))}`
+      return `${sym}0.00`
     }
 
     const getChangeClass = (current, previous) => {
@@ -225,10 +251,12 @@ export default {
     onMounted(() => loadData())
 
     return {
+      t,
       loading,
       error,
       quarterlyData,
       monthlyData,
+      currencySymbol,
       totalRevenue,
       avgMonthlyRevenue,
       totalOrders,
