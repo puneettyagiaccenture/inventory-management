@@ -52,3 +52,9 @@ logs/
 
 # Environment variables
 .env
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Nested repo artifacts
+inventory-management-main/
