@@ -178,6 +178,12 @@ export default {
     itemsCount: '{count}件',
     more: 'さらに...',
     demandForecasts: '需要予測',
+    tableView: 'テーブル',
+    kanbanView: 'カンバン',
+    current: '現在',
+    forecast: '予測',
+    noItems: '項目なし',
+    clearFilters: 'フィルタークリア',
     table: {
       sku: 'SKU',
       itemName: '品目名',
