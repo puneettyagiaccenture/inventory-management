@@ -178,6 +178,12 @@ export default {
     itemsCount: '{count} items',
     more: 'more...',
     demandForecasts: 'Demand Forecasts',
+    tableView: 'Table',
+    kanbanView: 'Kanban',
+    current: 'Current',
+    forecast: 'Forecast',
+    noItems: 'No items',
+    clearFilters: 'Clear filters',
     table: {
       sku: 'SKU',
       itemName: 'Item Name',
