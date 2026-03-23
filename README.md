@@ -2,7 +2,13 @@
 
 A full-stack demo application for a Claude Code workshop — inventory management, order tracking, demand forecasting, and analytics for factory operations.
 
-![Dashboard](docs/dashboard-screenshot.png)
+![Dashboard](docs/dashboard-overview.png)
+
+### More Screenshots
+
+| Orders | Reports |
+|--------|---------|
+| ![Orders](docs/orders-page.png) | ![Reports](docs/reports-page.png) |
 
 ## Tech Stack
 
